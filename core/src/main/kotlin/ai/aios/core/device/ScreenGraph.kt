@@ -46,6 +46,13 @@ data class RawNode(
     val visible: Boolean = true,
     val password: Boolean = false,
     val children: List<RawNode> = emptyList(),
+    /**
+     * Opaque back-reference to the platform node this was mapped from, carried
+     * through to [ScreenElement] so the Android layer can invoke native
+     * accessibility actions (setting text, for one, has no gesture equivalent).
+     * Kept as [Any] so this module stays free of Android types.
+     */
+    val handle: Any? = null,
 )
 
 /** What the model is allowed to do with a node. */
@@ -66,6 +73,8 @@ data class ScreenElement(
     val checked: Boolean? = null,
     val password: Boolean = false,
     val resourceId: String? = null,
+    /** See [RawNode.handle]. Never sent to the model. */
+    val handle: Any? = null,
 ) {
     val isInteractive: Boolean get() = affordances.isNotEmpty()
 }

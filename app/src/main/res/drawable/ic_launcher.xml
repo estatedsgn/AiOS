@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#1B1F24"
+        android:pathData="M0,0h108v108h-108z" />
+    <!-- A stylised head with a single eye: the agent living inside the phone. -->
+    <path
+        android:fillColor="#7BD88F"
+        android:pathData="M34,30h40a8,8 0 0,1 8,8v32a8,8 0 0,1 -8,8h-40a8,8 0 0,1 -8,-8v-32a8,8 0 0,1 8,-8z
+                          M54,10v12 M38,48h10v10h-10z M60,48h10v10h-10z" />
+    <path
+        android:strokeColor="#7BD88F"
+        android:strokeWidth="4"
+        android:pathData="M54,10v14" />
+</vector>

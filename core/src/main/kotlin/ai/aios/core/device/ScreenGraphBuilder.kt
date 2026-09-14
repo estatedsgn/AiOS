@@ -53,6 +53,7 @@ class ScreenGraphBuilder(
             checked = if (node.checkable) node.checked else null,
             password = node.password,
             resourceId = node.viewIdResourceName?.substringAfterLast('/'),
+            handle = node.handle,
         )
     }
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AiOS</string>
+    <string name="accessibility_service_label">AiOS agent control</string>
+    <string name="accessibility_service_description">Lets the AiOS agent read what is on screen and tap, swipe and type on your behalf, so it can carry out the tasks you give it. It acts only while a run you started is in progress.</string>
+    <string name="notification_channel_name">Agent runs</string>
+</resources>
