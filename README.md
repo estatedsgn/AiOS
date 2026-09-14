@@ -1,5 +1,7 @@
 # AiOS
 
+[![build](https://github.com/estatedsgn/AiOS/actions/workflows/build.yml/badge.svg)](https://github.com/estatedsgn/AiOS/actions/workflows/build.yml)
+
 An agent that lives on an Android phone and operates it the way a person does —
 it reads what is on screen, decides what to touch, and touches it. You give it a
 goal in plain language and your own Anthropic API key; it drives the phone one
@@ -90,6 +92,48 @@ default is not "trust it":
 Three autonomy modes — confirm everything, confirm consequential actions
 (default), don't ask — and the refusals above hold in all three.
 
+## Install it over a cable
+
+With the phone plugged in and USB debugging on, one command does everything —
+installs the APK, grants its permissions, and switches on the accessibility
+service the agent acts through:
+
+```bash
+./tools/install.sh --download      # macOS / Linux
+.\tools\install.ps1 -Download      # Windows
+```
+
+```
+AiOS installer
+  Device:  Pixel 7 (39K0199R2F)
+  Android: 14 (API 34)
+Installing
+  aios-3f43774.apk (28M)
+  Installed ai.aios.app.
+Enabling the accessibility service
+  This is what lets the agent read the screen and tap, swipe and type.
+  Granted. AiOS can now operate this phone.
+```
+
+That last step is the one that matters. Switching on an accessibility service
+normally means walking through Settings by hand; over a cable it can be written
+straight to secure settings, which is what makes this a single command. It is
+also the permission that lets the agent touch anything on screen, so the script
+says plainly what it granted, preserves any other accessibility service you
+already rely on, and `--uninstall` revokes only its own.
+
+To get USB debugging on: Settings → About phone → tap **Build number** seven
+times, then Settings → Developer options → **USB debugging**.
+
+Other ways to run it:
+
+| Command | What it does |
+|---|---|
+| `./tools/install.sh` | Uses a locally built APK, builds one if you have the SDK, otherwise downloads |
+| `./tools/install.sh --apk <file>` | Installs a specific file (e.g. a CI artifact) |
+| `./tools/install.sh --serial <id>` | Picks one phone when several are attached |
+| `./tools/install.sh --uninstall` | Removes AiOS and revokes its access |
+
 ## Building
 
 ```bash
@@ -104,13 +148,26 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties
 `settings.gradle.kts` includes `:app` only when an Android SDK is present, so
 `:core:test` works on a machine or CI runner that has none.
 
-## Running it
+**You do not need a local Android SDK to get an APK.** CI builds one on every
+push and uploads it as the `aios-apk` artifact; pushing a `v*` tag publishes a
+release that `--download` picks up:
 
-1. Install the APK and open AiOS.
-2. Settings → paste your Anthropic API key, pick a model and an autonomy mode.
-3. Turn on **AiOS agent control** in Android Settings → Accessibility. Only you
-   can grant this; nothing in the app can grant it to itself.
-4. Type a goal and press Run. Watch the step log, approve what it asks about.
+```bash
+git tag v0.1.0 && git push --tags
+```
+
+## Open source
+
+AiOS is MIT licensed and builds from source with no proprietary components
+beyond the Android SDK itself. It runs on stock Android and equally on
+open-source ROMs — LineageOS, GrapheneOS, /e/OS — because it only uses the
+accessibility APIs every Android build exposes. On those ROMs the cable install
+above works unchanged.
+
+AiOS is an application, not a ROM: it installs onto whatever Android the phone
+already runs rather than replacing it. Flashing a different OS is a separate,
+device-specific and destructive operation (it unlocks the bootloader and wipes
+the phone), so it is deliberately not something this installer attempts.
 
 ## Status
 
@@ -119,9 +176,14 @@ tool-argument parsing and every branch of the run loop, including rejection
 handling, blocked actions, stale element ids, stuck detection and the step
 ceiling.
 
-`app` is complete but has not been compiled or run: it needs the Android SDK,
-AndroidX and the Android Gradle Plugin, all of which are served from
-`dl.google.com`, which was unreachable from the environment this was written in.
-Cross-module references, interface conformance and resource references were
-verified statically instead. Expect to fix the ordinary things a first real
-build turns up.
+`tools/install.sh` was exercised against a stubbed `adb` covering a fresh phone,
+a phone already running another accessibility service, a repeat install, the
+uninstall path, an unsupported Android version, and the no-device,
+unauthorised, multiple-device and missing-adb failures.
+
+`app` is complete but has not been compiled or run, and `tools/install.ps1` has
+not been executed: the Android SDK, AndroidX and the Android Gradle Plugin are
+served from `dl.google.com`, and PowerShell was unavailable, in the environment
+this was written in. Cross-module references, interface conformance and resource
+references were verified statically instead. The CI workflow does the real
+build; expect the ordinary fixes a first green build turns up.

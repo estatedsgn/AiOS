@@ -1,7 +1,11 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    // Versions come from settings.gradle.kts. AGP must be applied before the
+    // Kotlin Android plugin, which reads AGP's extension.
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -34,10 +38,6 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
     }
@@ -54,6 +54,14 @@ android {
                 "META-INF/*.kotlin_module",
             )
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        // Matches :core and android.compileOptions above. The old
+        // kotlinOptions{} DSL is removed in Kotlin 2.x, not merely deprecated.
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
