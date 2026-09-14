@@ -1,8 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.kotlin.serialization)
+    // Versions come from settings.gradle.kts.
+    kotlin("jvm")
+    kotlin("plugin.serialization")
 }
 
 // Java 17 bytecode, compiled by whatever JDK (17+) is on the machine. Pinned
@@ -24,7 +25,7 @@ dependencies {
     api(libs.kotlin.serialization.json)
     api(libs.anthropic.java)
 
-    testImplementation(libs.kotlin.test)
+    testImplementation(kotlin("test"))
     testImplementation(libs.kotlin.coroutines.test)
 }
 
