@@ -6,6 +6,11 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Publish a release under this tag (e.g. v0.1.0). Leave empty to only build."
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -74,23 +79,39 @@ jobs:
           path: dist/*.apk
           if-no-files-found: error
 
-      # Tagging a commit publishes an APK anyone can install over a cable with
-      # tools/install.sh --download.
-      - name: Attach the APK to the release
-        if: startsWith(github.ref, 'refs/tags/v')
+      # Publishes an APK anyone can install over a cable with
+      # tools/install.sh --download. Triggered either by pushing a v* tag, or by
+      # running this workflow manually with a release_tag - the manual path also
+      # creates the tag, which is the only route available where a client cannot
+      # push tags itself.
+      - name: Publish the APK as a release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag != '' && inputs.release_tag || github.ref_name }}
+          APK: ${{ steps.rename.outputs.apk }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "AiOS ${GITHUB_REF_NAME}" \
-            --notes "Debug-signed build of AiOS.
+          notes=$(cat <<'EOF'
+          Debug-signed build of AiOS.
 
-          Install onto a phone connected by USB:
+          Install onto a phone connected over USB:
 
-              ./tools/install.sh --download
+              ./tools/install.sh --download      # macOS / Linux
+              .\tools\install.ps1 -Download      # Windows
 
-          The script installs the APK, grants its permissions and switches on the
-          accessibility service that the agent uses to operate the phone." \
-            --generate-notes \
-            "${{ steps.rename.outputs.apk }}" \
-          || gh release upload "${GITHUB_REF_NAME}" "${{ steps.rename.outputs.apk }}" --clobber
+          The script installs the APK, grants its runtime permissions, and switches
+          on the accessibility service the agent uses to operate the phone. It says
+          what it granted, keeps any accessibility service you already use, and
+          `--uninstall` revokes only its own.
+          EOF
+          )
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
+              --title "AiOS $TAG" \
+              --notes "$notes" \
+              "$APK"
+          fi
