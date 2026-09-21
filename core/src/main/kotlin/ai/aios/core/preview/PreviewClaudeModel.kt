@@ -14,7 +14,7 @@ import kotlinx.coroutines.runInterruptible
 import java.time.Duration
 import java.time.ZonedDateTime
 
-/** One client/history per run. Credentials are supplied by encrypted Android settings, never the workspace. */
+/** One client/history per run. Credentials never enter the workspace or tool arguments. */
 class PreviewClaudeModel(apiKey: String, private val model: String) : PreviewModel, AutoCloseable {
     private val client: AnthropicClient = AnthropicOkHttpClient.builder()
         .apiKey(apiKey).timeout(Duration.ofSeconds(45)).maxRetries(0).build()
@@ -42,22 +42,20 @@ class PreviewClaudeModel(apiKey: String, private val model: String) : PreviewMod
                 }).build()
         }
         consumedResults = exchanges.size
-
         val params = MessageCreateParams.builder().model(model).maxTokens(2_048)
             .systemOfTextBlockParams(listOf(TextBlockParam.builder().text(systemPrompt()).build()))
             .apply { PreviewTools.all.forEach { addTool(toSdkTool(it)) } }
             .apply { messages.forEach { addMessage(it) } }.build()
-        // Interrupt the blocking request on Stop; even a late response can never execute tools
-        // because PreviewRuntime checks cancellation again immediately after this call.
+        // Stop interrupts the request. Runtime checks cancellation again before every effect.
         val response = runInterruptible(Dispatchers.IO) { client.messages().create(params) }
         messages += MessageParam.builder().role(MessageParam.Role.ASSISTANT)
             .contentOfBlockParams(response.content().map { it.toParam() }).build()
         val text = response.content().mapNotNull { it.text().orElse(null)?.text() }.joinToString("\n")
         val calls = response.content().mapNotNull { block ->
             val use = block.toolUse().orElse(null) ?: return@mapNotNull null
-            val raw = use._input().convert(Map::class.java)
-            // The advertised schema uses strings only. Do not coerce objects/numbers into actions.
+            val raw = requireNotNull(use._input().convert(Map::class.java)) { "Null tool arguments" }
             require(raw.keys.all { it is String } && raw.values.all { it is String }) { "Invalid tool arguments" }
+            require(use.id().isNotBlank() && use.id().length <= 200) { "Invalid tool ID" }
             ToolCall(use.id(), use.name(), raw.entries.associate { it.key as String to it.value as String })
         }
         return ModelTurn(text, calls)
