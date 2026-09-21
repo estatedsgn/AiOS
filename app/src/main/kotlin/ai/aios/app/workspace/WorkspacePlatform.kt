@@ -1,4 +1,4 @@
-package ai.aios.app.preview
+package ai.aios.app.workspace
 
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -52,7 +52,7 @@ private class AndroidPreviewPort(private val context: Context) : ToolPort {
     override fun available(tool: String) = intent(tool)?.resolveActivity(context.packageManager) != null
     override suspend fun execute(call: ToolCall): ToolOutcome = withContext(Dispatchers.Main.immediate) {
         ensureActive()
-        if (!PreviewSession.visible) return@withContext ToolOutcome(ProposalStatus.BLOCKED, "APK не на переднем плане; действие не запущено.")
+        if (!WorkspaceSession.visible) return@withContext ToolOutcome(ProposalStatus.BLOCKED, "APK не на переднем плане; действие не запущено.")
         val target = intent(call.tool) ?: return@withContext ToolOutcome(ProposalStatus.BLOCKED, "Неподдерживаемый Android tool.")
         if (call.tool == "calendar.draft") target.putExtra(CalendarContract.Events.TITLE, call.arguments.getValue("title"))
         try {
@@ -72,7 +72,7 @@ private class ScreenMetadataPort : ToolPort {
     override fun available(tool: String) = tool == "screen.inspect" && AiosAccessibilityService.isEnabled
     override suspend fun execute(call: ToolCall): ToolOutcome = withContext(Dispatchers.Main.immediate) {
         ensureActive()
-        if (!PreviewSession.visible) return@withContext ToolOutcome(ProposalStatus.BLOCKED, "Нет активного запроса с экрана APK.")
+        if (!WorkspaceSession.visible) return@withContext ToolOutcome(ProposalStatus.BLOCKED, "Нет активного запроса с экрана APK.")
         val root = AiosAccessibilityService.instance?.rootInActiveWindow
             ?: return@withContext ToolOutcome(ProposalStatus.FAILED, "Дерево экрана недоступно. Accessibility включается только вручную.")
         try {
@@ -85,7 +85,7 @@ private class ScreenMetadataPort : ToolPort {
 }
 
 /** One writer per process. All disk work runs off the UI thread; no background agent loop. */
-class PreviewSession private constructor(context: Context) {
+class WorkspaceSession private constructor(context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile private var engine: WorkspaceEngine? = null
     private var job: Job? = null
@@ -146,9 +146,9 @@ class PreviewSession private constructor(context: Context) {
     private fun refresh() { _workspace.value = engine?.state }
     companion object {
         @Volatile var visible = false
-        @Volatile private var instance: PreviewSession? = null
-        fun get(context: Context): PreviewSession = instance ?: synchronized(this) {
-            instance ?: PreviewSession(context.applicationContext).also { instance = it }
+        @Volatile private var instance: WorkspaceSession? = null
+        fun get(context: Context): WorkspaceSession = instance ?: synchronized(this) {
+            instance ?: WorkspaceSession(context.applicationContext).also { instance = it }
         }
     }
 }

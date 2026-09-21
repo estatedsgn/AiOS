@@ -27,7 +27,7 @@
         tools:targetApi="34">
         <!-- Normal APK entry point. HOME is offered, never selected or forced by the app. -->
         <activity
-            android:name=".preview.PreviewActivity"
+            android:name=".workspace.WorkspaceActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">

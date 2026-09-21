@@ -1,4 +1,4 @@
-package ai.aios.app.preview
+package ai.aios.app.workspace
 
 import android.app.role.RoleManager
 import android.content.ComponentName
@@ -26,19 +26,19 @@ import ai.aios.core.workspace.*
 import java.text.DateFormat
 import java.util.Date
 
-class PreviewActivity : ComponentActivity() {
+class WorkspaceActivity : ComponentActivity() {
     private val homeRequest = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val session = PreviewSession.get(this)
+        val session = WorkspaceSession.get(this)
         setContent { MaterialTheme { PreviewHome(session, ::chooseHome, ::openManual) } }
     }
     override fun onStart() {
         super.onStart()
         if (AgentSession.status.value in setOf(AgentSession.Status.RUNNING, AgentSession.Status.WAITING_FOR_USER)) AgentRunService.stop(this)
-        PreviewSession.visible = true
+        WorkspaceSession.visible = true
     }
-    override fun onStop() { PreviewSession.visible = false; super.onStop() }
+    override fun onStop() { WorkspaceSession.visible = false; super.onStop() }
     private fun chooseHome() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roles = getSystemService(RoleManager::class.java)
@@ -56,7 +56,7 @@ class PreviewActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PreviewHome(session: PreviewSession, chooseHome: () -> Unit, open: (Intent) -> Unit) {
+private fun PreviewHome(session: WorkspaceSession, chooseHome: () -> Unit, open: (Intent) -> Unit) {
     val context = LocalContext.current
     val workspace by session.workspace.collectAsState()
     val error by session.error.collectAsState()
@@ -103,7 +103,7 @@ private fun PreviewHome(session: PreviewSession, chooseHome: () -> Unit, open: (
 }
 
 @Composable
-private fun WorkspaceList(workspace: Workspace?, enabled: Boolean, session: PreviewSession, modifier: Modifier) {
+private fun WorkspaceList(workspace: Workspace?, enabled: Boolean, session: WorkspaceSession, modifier: Modifier) {
     val snapshot = workspace ?: Workspace()
     val pending = snapshot.proposals.filter { it.status == ProposalStatus.WAITING_APPROVAL }
     LazyColumn(modifier.fillMaxWidth().testTag("workspace"), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
